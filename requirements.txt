@@ -1,3 +1,8 @@
-# Runtime code uses only the Python standard library.
+# Claim extraction (Person 1) uses only the Python standard library.
+
+# Evidence retrieval and NLI verification (Person 2):
+sentence-transformers>=3.0
+transformers>=4.40
+
 # Optional test runner:
 pytest>=8.0
