@@ -1,0 +1,52 @@
+name: Backend tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+
+    services:
+      # Throwaway database that exists only for this job. Its *_test name
+      # satisfies the safety guard in tests/test_request_log.py.
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: truthlayer
+          POSTGRES_PASSWORD: truthlayer-ci-only
+          POSTGRES_DB: truthlayer_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U truthlayer -d truthlayer_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TRUTHLAYER_TEST_DATABASE_URL: postgresql+psycopg://truthlayer:truthlayer-ci-only@localhost:5432/truthlayer_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies (without ML model packages)
+        # sentence-transformers/transformers pull in PyTorch and model
+        # downloads. All tests use fake models except one real-model test,
+        # which skips itself when those packages are missing.
+        run: |
+          grep -vE '^(sentence-transformers|transformers)\b' requirements.txt > "$RUNNER_TEMP/requirements-ci.txt"
+          python -m pip install -r "$RUNNER_TEMP/requirements-ci.txt"
+
+      - name: Run tests
+        run: python -m pytest -rs
