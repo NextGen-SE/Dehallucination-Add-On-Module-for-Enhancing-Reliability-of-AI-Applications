@@ -116,3 +116,96 @@ network access.
 - REQ-8: Unverifiable when no retrieved passage clears the relevance threshold.
 - REQ-9: knowledge base is swappable — just point at a different JSON file.
 - REQ-10: exact evidence passage text + source_id returned for Supported/Contradicted.
+
+## Verification API (Person 4)
+
+FastAPI service exposing the extraction → verification pipeline as
+`POST /verify`, with API-key auth and PostgreSQL request logging.
+
+### Files
+- `api/main.py`: `create_app()` factory, `/verify` route, error handlers, CORS, request-log middleware
+- `api/schemas.py`: request/response models (SRS Appendix B)
+- `api/pipeline.py`: calls `extract_claims` then `EvidenceVerifier.verify_claims`, merges by `claim_id`
+- `api/auth.py`: hashed `X-API-Key` check; `python -m api.auth` generates a key + hash
+- `api/request_log.py`: `request_logs` table and SQLAlchemy Core logger
+- `api/config.py`: environment settings (see `.env.example`)
+- `tests/test_api.py`, `tests/test_request_log.py`
+
+### Setup and run (Windows PowerShell)
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+copy .env.example .env          # then fill in the two required values
+python -m api.auth              # prints a new key and its SHA-256 hash
+uvicorn api.main:create_app --factory --env-file .env --port 8000
+```
+The API refuses to start without `TRUTHLAYER_API_KEY_HASHES` and
+`TRUTHLAYER_DATABASE_URL` (a PostgreSQL 15 URL,
+`postgresql+psycopg://...`). The `request_logs` table is created on startup.
+Interactive docs: http://localhost:8000/docs. For the frontend, set
+`NEXT_PUBLIC_USE_MOCK=false` in `frontend/.env.local` and paste the key into
+its API key field.
+
+### Request
+`POST /verify`, header `X-API-Key: <key>`:
+```json
+{"text": "The Earth orbits the Sun.", "knowledge_base_id": "wikipedia_subset"}
+```
+`knowledge_base_id` is optional; only the single configured ID
+(`TRUTHLAYER_KNOWLEDGE_BASE_ID`) is accepted.
+
+### Response (200)
+```json
+{
+  "status": "ok",
+  "message": null,
+  "claims": [{
+    "claim_id": 1,
+    "text": "The Earth orbits the Sun.",
+    "span": {"start_char": 0, "end_char": 25},
+    "source_sentence": "The Earth orbits the Sun.",
+    "source_sentence_span": {"start_char": 0, "end_char": 25},
+    "verdict": "Supported",
+    "confidence": 0.97,
+    "citations": [{"source_id": "KB-001", "text": "The Earth orbits the Sun once approximately every 365.25 days.", "relevance_score": 0.81}]
+  }],
+  "processing_time_ms": 812
+}
+```
+Spans are half-open character offsets into the request `text`. When no
+claims are found: `status: "no_verifiable_claims"`, `message: "No
+verifiable claims found"`, `claims: []` (still 200, REQ-4).
+
+### Errors
+All errors return `{"detail": "<message>"}`.
+- **400**: malformed JSON, missing or non-string `text`, input over 2,000 words, `knowledge_base_id` over 64 characters or unknown.
+- **401**: missing or invalid `X-API-Key` (checked before the body is validated, except for unparseable JSON).
+- **500**: pipeline failure; internal details are logged server-side only.
+
+### Request log (PostgreSQL)
+One row per `/verify` request (including 400/401/500): timestamp, status
+code, processing time, input word/char counts, knowledge base ID, claim and
+per-verdict counts, error type. The submitted text, claims, evidence, API
+key and client IP are **not** stored. Rows older than
+`TRUTHLAYER_LOG_RETENTION_DAYS` (default 30) are purged on startup.
+
+### Tests
+```powershell
+python -m pytest
+```
+API tests use fake models and an in-memory logger, so they don't need model
+downloads or database credentials. The logger's SQL is unit-tested against
+in-memory SQLite. To also run it against real PostgreSQL, point
+`TRUTHLAYER_TEST_DATABASE_URL` at a **dedicated** test database. The tests
+fail closed: the database name must end in `_test` (e.g. `truthlayer_test`),
+must differ from `TRUTHLAYER_DATABASE_URL`, and the URL may not carry
+`service`/`dbname`/`options`/`host` query options. After connecting, the
+tests check `current_database()` and then run inside a randomly named
+`tl_test_*` schema that is dropped afterwards, so no other rows can be purged.
+
+### Known gaps
+- Confidence is the raw NLI score; calibration (REQ-11) is not implemented.
+- No knowledge-base registry or upload (REQ-9 via API); one configured KB file.
+- No NLI-failure fallback to similarity-only verification (SRS section 7).
+- No batch/evaluation endpoints (REQ-17/18); no HTTPS termination (NFR-8, deployment concern).
