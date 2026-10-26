@@ -204,6 +204,11 @@ must differ from `TRUTHLAYER_DATABASE_URL`, and the URL may not carry
 tests check `current_database()` and then run inside a randomly named
 `tl_test_*` schema that is dropped afterwards, so no other rows can be purged.
 
+CI (`.github/workflows/backend-tests.yml`) runs `pytest` on Python 3.11 for
+pull requests and pushes to `main`, with a throwaway `postgres:15` service
+as the `truthlayer_test` database, so the PostgreSQL tests run there too. It
+skips installing the ML model packages, so the real-model test is skipped.
+
 ### Known gaps
 - Confidence is the raw NLI score; calibration (REQ-11) is not implemented.
 - No knowledge-base registry or upload (REQ-9 via API); one configured KB file.

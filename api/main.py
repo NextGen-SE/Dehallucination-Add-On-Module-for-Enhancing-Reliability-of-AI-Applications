@@ -107,6 +107,18 @@ def create_app(
         _log_fields(request).setdefault("error_type", "invalid_request")
         return JSONResponse(status_code=400, content={"detail": _format_validation_error(exc)})
 
+    default_openapi = app.openapi
+
+    def openapi() -> dict[str, Any]:
+        # Validation errors are 400 (above), so drop FastAPI's auto-documented 422.
+        schema = default_openapi()
+        for operations in schema.get("paths", {}).values():
+            for operation in operations.values():
+                operation.get("responses", {}).pop("422", None)
+        return schema
+
+    app.openapi = openapi
+
     @app.post(
         "/verify",
         response_model=VerifyResponse,

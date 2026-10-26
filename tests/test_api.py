@@ -225,6 +225,10 @@ class TestBadRequests(ApiTestCase):
     def test_unknown_knowledge_base_id(self):
         self.assert_400(self.post({"text": SAMPLE, "knowledge_base_id": "other_kb"}), "Unknown knowledge_base_id")
 
+    def test_openapi_documents_400_not_422(self):
+        responses = self.client.get("/openapi.json").json()["paths"]["/verify"]["post"]["responses"]
+        self.assertEqual(set(responses), {"200", "400", "401", "500"})
+
 
 class TestServerError(unittest.TestCase):
     def test_pipeline_failure_is_500_without_internal_details(self):
