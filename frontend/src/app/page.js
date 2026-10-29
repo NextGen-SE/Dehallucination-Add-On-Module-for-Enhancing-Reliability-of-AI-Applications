@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NavBar from "../components/NavBar";
 import Disclaimer from "../components/Disclaimer";
 import ErrorBanner from "../components/ErrorBanner";
@@ -14,7 +14,24 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  // Remember the API key in this browser so it survives page refreshes.
+  useEffect(() => {
+    try {
+      setApiKey(localStorage.getItem("tl_api_key") || "");
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
 
+  function handleKeyChange(e) {
+    const value = e.target.value;
+    setApiKey(value);
+    try {
+      localStorage.setItem("tl_api_key", value);
+    } catch {
+      /* storage unavailable */
+    }
+  }
   const words = countWords(text);
 
   async function handleVerify() {
@@ -66,7 +83,7 @@ export default function Home() {
             id="api-key"
             type="password"
             value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
+            onChange={handleKeyChange}
             placeholder="Only needed when the backend requires a key"
           />
         </details>
