@@ -1,0 +1,50 @@
+claim_text,source_id,evidence_text,expected_verdict
+"The Earth revolves around the Sun.",KB-001,"The Earth orbits the Sun once approximately every 365.25 days.",Supported
+"One complete Earth orbit around the Sun takes approximately 365.25 days.",KB-001,"The Earth orbits the Sun once approximately every 365.25 days.",Supported
+"Earth completes roughly one revolution around the Sun each year.",KB-001,"The Earth orbits the Sun once approximately every 365.25 days.",Supported
+"Water contains two hydrogen atoms and one oxygen atom.",KB-002,"Water is a chemical compound made of two hydrogen atoms and one oxygen atom, with the formula H2O.",Supported
+"The chemical formula of water is H2O.",KB-002,"Water is a chemical compound made of two hydrogen atoms and one oxygen atom, with the formula H2O.",Supported
+"Water is composed of hydrogen and oxygen.",KB-002,"Water is a chemical compound made of two hydrogen atoms and one oxygen atom, with the formula H2O.",Supported
+"Bengaluru is the capital of Karnataka.",KB-003,"Bengaluru is the capital city of the Indian state of Karnataka.",Supported
+"Karnataka's capital city is Bengaluru.",KB-003,"Bengaluru is the capital city of the Indian state of Karnataka.",Supported
+"Bengaluru serves as the capital of the Indian state of Karnataka.",KB-003,"Bengaluru is the capital city of the Indian state of Karnataka.",Supported
+"Karnataka is situated in southwestern India.",KB-004,"Karnataka is a state located in the southwestern region of India.",Supported
+"Karnataka is an Indian state in the southwest of the country.",KB-004,"Karnataka is a state located in the southwestern region of India.",Supported
+"The southwestern part of India includes the state of Karnataka.",KB-004,"Karnataka is a state located in the southwestern region of India.",Supported
+"The Moon is a natural satellite of Earth.",KB-005,"The Moon is a natural satellite of the Earth and is made primarily of rock, not cheese.",Supported
+"The Moon is primarily composed of rock rather than cheese.",KB-005,"The Moon is a natural satellite of the Earth and is made primarily of rock, not cheese.",Supported
+"The Moon is Earth's natural satellite.",KB-005,"The Moon is a natural satellite of the Earth and is made primarily of rock, not cheese.",Supported
+"Earth is the planet that orbits Mars.",KB-001,"The Earth orbits the Sun once approximately every 365.25 days.",Contradicted
+"Earth completes an orbit around Jupiter instead of the Sun.",KB-001,"The Earth orbits the Sun once approximately every 365.25 days.",Contradicted
+"Earth takes approximately 30 days to orbit the Sun.",KB-001,"The Earth orbits the Sun once approximately every 365.25 days.",Contradicted
+"Water consists of two oxygen atoms and one hydrogen atom.",KB-002,"Water is a chemical compound made of two hydrogen atoms and one oxygen atom, with the formula H2O.",Contradicted
+"The chemical formula of water is CO2.",KB-002,"Water is a chemical compound made of two hydrogen atoms and one oxygen atom, with the formula H2O.",Contradicted
+"Water contains no hydrogen atoms.",KB-002,"Water is a chemical compound made of two hydrogen atoms and one oxygen atom, with the formula H2O.",Contradicted
+"Mysuru is the capital city of Karnataka.",KB-003,"Bengaluru is the capital city of the Indian state of Karnataka.",Contradicted
+"Bengaluru is not the capital of Karnataka.",KB-003,"Bengaluru is the capital city of the Indian state of Karnataka.",Contradicted
+"Karnataka is a city rather than an Indian state.",KB-004,"Karnataka is a state located in the southwestern region of India.",Contradicted
+"Karnataka is located in northern India.",KB-004,"Karnataka is a state located in the southwestern region of India.",Contradicted
+"Karnataka is located in eastern India.",KB-004,"Karnataka is a state located in the southwestern region of India.",Contradicted
+"The Moon is made primarily of cheese.",KB-005,"The Moon is a natural satellite of the Earth and is made primarily of rock, not cheese.",Contradicted
+"The Moon is a human-made satellite.",KB-005,"The Moon is a natural satellite of the Earth and is made primarily of rock, not cheese.",Contradicted
+"The Moon is not a natural satellite of Earth.",KB-005,"The Moon is a natural satellite of the Earth and is made primarily of rock, not cheese.",Contradicted
+"Water contains three hydrogen atoms and one oxygen atom.",KB-002,"Water is a chemical compound made of two hydrogen atoms and one oxygen atom, with the formula H2O.",Contradicted
+"Python was first released in 2005.",KB-010,"Python is a high-level, interpreted programming language first released in 1991.",Contradicted
+"India gained independence on 26 January 1950.",KB-012,"India gained independence from British rule on 15 August 1947.",Contradicted
+"The Pacific Ocean is the smallest ocean on Earth.",KB-013,"The Pacific Ocean is the largest and deepest of Earth's five oceans.",Contradicted
+"The speed of light in a vacuum is exactly 100000 kilometers per second.",KB-011,"The speed of light in a vacuum is approximately 299,792 kilometers per second.",Contradicted
+"The Earth has exactly seven moons.",,,"Unverifiable"
+"The average temperature of the Sun is 5000 degrees Celsius.",,,"Unverifiable"
+"Water freezes at exactly 10 degrees Celsius under standard atmospheric pressure.",,,"Unverifiable"
+"Bengaluru has a population of exactly 15 million people.",,,"Unverifiable"
+"Karnataka has exactly 35 districts.",,,"Unverifiable"
+"The largest city in Karnataka is Hubballi.",,,"Unverifiable"
+"The Moon takes exactly 20 days to complete one orbit around Earth.",,,"Unverifiable"
+"Mount Everest is located in Karnataka.",,,"Unverifiable"
+"The human heart beats exactly 100 times every minute in every person.",,,"Unverifiable"
+"Photosynthesis occurs only during nighttime.",,,"Unverifiable"
+"The Great Wall of China is visible from every location on Earth.",,,"Unverifiable"
+"Python supports exactly 100 built-in functions.",,,"Unverifiable"
+"The human brain contains exactly 10 billion neurons.",,,"Unverifiable"
+"Every person requires exactly eight hours of sleep each night.",,,"Unverifiable"
+"The French Revolution lasted exactly five years.",,,"Unverifiable"
