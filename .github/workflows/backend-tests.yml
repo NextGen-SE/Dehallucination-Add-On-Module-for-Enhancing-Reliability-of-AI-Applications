@@ -1,3 +1,4 @@
+
 name: Backend tests
 
 on:
@@ -47,6 +48,7 @@ jobs:
         run: |
           grep -vE '^(sentence-transformers|transformers)\b' requirements.txt > "$RUNNER_TEMP/requirements-ci.txt"
           python -m pip install -r "$RUNNER_TEMP/requirements-ci.txt"
+          python -m pip install -r requirements-calibration.txt
 
       - name: Run tests
         run: python -m pytest -rs

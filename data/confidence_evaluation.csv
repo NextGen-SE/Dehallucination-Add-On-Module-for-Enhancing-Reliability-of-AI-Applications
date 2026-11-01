@@ -1,0 +1,76 @@
+claim_text,source_id,evidence_text,expected_verdict
+"Earth travels around the Sun once in approximately 365.25 days.",KB-001,"The Earth orbits the Sun once approximately every 365.25 days.",Supported
+"The Earth completes one solar orbit in roughly one year.",KB-001,"The Earth orbits the Sun once approximately every 365.25 days.",Supported
+"Earth orbits the Sun once every 100 days.",KB-001,"The Earth orbits the Sun once approximately every 365.25 days.",Contradicted
+"The Earth orbits Mars instead of the Sun.",KB-001,"The Earth orbits the Sun once approximately every 365.25 days.",Contradicted
+"Water is composed of two hydrogen atoms and one oxygen atom.",KB-002,"Water is a chemical compound made of two hydrogen atoms and one oxygen atom, with the formula H2O.",Supported
+"The chemical formula H2O represents water.",KB-002,"Water is a chemical compound made of two hydrogen atoms and one oxygen atom, with the formula H2O.",Supported
+"Water contains two oxygen atoms and one hydrogen atom.",KB-002,"Water is a chemical compound made of two hydrogen atoms and one oxygen atom, with the formula H2O.",Contradicted
+"Water has the chemical formula CO2.",KB-002,"Water is a chemical compound made of two hydrogen atoms and one oxygen atom, with the formula H2O.",Contradicted
+"Bengaluru is the capital city of Karnataka.",KB-003,"Bengaluru is the capital city of the Indian state of Karnataka.",Supported
+"Karnataka's capital is Bengaluru.",KB-003,"Bengaluru is the capital city of the Indian state of Karnataka.",Supported
+"Mysuru is the capital city of Karnataka.",KB-003,"Bengaluru is the capital city of the Indian state of Karnataka.",Contradicted
+"Bengaluru is not the capital of Karnataka.",KB-003,"Bengaluru is the capital city of the Indian state of Karnataka.",Contradicted
+"Karnataka is situated in southwestern India.",KB-004,"Karnataka is a state located in the southwestern region of India.",Supported
+"Karnataka is an Indian state in the southwest of the country.",KB-004,"Karnataka is a state located in the southwestern region of India.",Supported
+"Karnataka is located in northern India.",KB-004,"Karnataka is a state located in the southwestern region of India.",Contradicted
+"Karnataka is situated in eastern India.",KB-004,"Karnataka is a state located in the southwestern region of India.",Contradicted
+"The Moon is Earth's natural satellite.",KB-005,"The Moon is a natural satellite of the Earth and is made primarily of rock, not cheese.",Supported
+"The Moon is primarily made of rock.",KB-005,"The Moon is a natural satellite of the Earth and is made primarily of rock, not cheese.",Supported
+"The Moon is primarily made of cheese.",KB-005,"The Moon is a natural satellite of the Earth and is made primarily of rock, not cheese.",Contradicted
+"The Moon is a human-made satellite.",KB-005,"The Moon is a natural satellite of the Earth and is made primarily of rock, not cheese.",Contradicted
+"Mount Everest is located in the Himalayas.",KB-006,"Mount Everest, located in the Himalayas, is the tallest mountain above sea level on Earth.",Supported
+"Mount Everest is the tallest mountain above sea level on Earth.",KB-006,"Mount Everest, located in the Himalayas, is the tallest mountain above sea level on Earth.",Supported
+"Mount Everest is located in the Alps.",KB-006,"Mount Everest, located in the Himalayas, is the tallest mountain above sea level on Earth.",Contradicted
+"Mount Everest is not the tallest mountain above sea level on Earth.",KB-006,"Mount Everest, located in the Himalayas, is the tallest mountain above sea level on Earth.",Contradicted
+"The human heart has four chambers.",KB-007,"The human heart has four chambers: two atria and two ventricles.",Supported
+"The heart contains two atria and two ventricles.",KB-007,"The human heart has four chambers: two atria and two ventricles.",Supported
+"The human heart has three chambers.",KB-007,"The human heart has four chambers: two atria and two ventricles.",Contradicted
+"The human heart has five chambers.",KB-007,"The human heart has four chambers: two atria and two ventricles.",Contradicted
+"Green plants use sunlight to synthesize food through photosynthesis.",KB-008,"Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water.",Supported
+"Photosynthesis uses carbon dioxide and water to produce food with sunlight.",KB-008,"Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water.",Supported
+"Photosynthesis occurs without sunlight.",KB-008,"Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water.",Contradicted
+"Photosynthesis uses neither carbon dioxide nor water.",KB-008,"Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water.",Contradicted
+"The Great Wall of China was constructed over several centuries.",KB-009,"The Great Wall of China was built over centuries by several Chinese dynasties to protect against invasions.",Supported
+"Several Chinese dynasties contributed to building the Great Wall.",KB-009,"The Great Wall of China was built over centuries by several Chinese dynasties to protect against invasions.",Supported
+"The Great Wall of China was built entirely in one year.",KB-009,"The Great Wall of China was built over centuries by several Chinese dynasties to protect against invasions.",Contradicted
+"Only one Chinese dynasty built the entire Great Wall.",KB-009,"The Great Wall of China was built over centuries by several Chinese dynasties to protect against invasions.",Contradicted
+"Python was first released in 1991.",KB-010,"Python is a high-level, interpreted programming language first released in 1991.",Supported
+"Python is an interpreted programming language.",KB-010,"Python is a high-level, interpreted programming language first released in 1991.",Supported
+"Python was first released in 2005.",KB-010,"Python is a high-level, interpreted programming language first released in 1991.",Contradicted
+"Python is a low-level, compiled programming language.",KB-010,"Python is a high-level, interpreted programming language first released in 1991.",Contradicted
+"The speed of light in a vacuum is approximately 299792 kilometers per second.",KB-011,"The speed of light in a vacuum is approximately 299,792 kilometers per second.",Supported
+"Light travels at roughly 299792 kilometers per second in a vacuum.",KB-011,"The speed of light in a vacuum is approximately 299,792 kilometers per second.",Supported
+"The speed of light in a vacuum is approximately 100000 kilometers per second.",KB-011,"The speed of light in a vacuum is approximately 299,792 kilometers per second.",Contradicted
+"The speed of light in a vacuum is approximately 500000 kilometers per second.",KB-011,"The speed of light in a vacuum is approximately 299,792 kilometers per second.",Contradicted
+"India became independent from British rule on 15 August 1947.",KB-012,"India gained independence from British rule on 15 August 1947.",Supported
+"India's independence date is 15 August 1947.",KB-012,"India gained independence from British rule on 15 August 1947.",Supported
+"India gained independence on 26 January 1950.",KB-012,"India gained independence from British rule on 15 August 1947.",Contradicted
+"India gained independence from British rule in 1942.",KB-012,"India gained independence from British rule on 15 August 1947.",Contradicted
+"The Pacific Ocean is the largest ocean on Earth.",KB-013,"The Pacific Ocean is the largest and deepest of Earth's five oceans.",Supported
+"The Pacific Ocean is the deepest of Earth's five oceans.",KB-013,"The Pacific Ocean is the largest and deepest of Earth's five oceans.",Supported
+"The Pacific Ocean is the smallest of Earth's five oceans.",KB-013,"The Pacific Ocean is the largest and deepest of Earth's five oceans.",Contradicted
+"The Pacific Ocean is the shallowest of Earth's five oceans.",KB-013,"The Pacific Ocean is the largest and deepest of Earth's five oceans.",Contradicted
+"DNA carries genetic instructions used by living organisms.",KB-014,"DNA, or deoxyribonucleic acid, carries the genetic instructions used in the growth and functioning of living organisms.",Supported
+"DNA contains instructions involved in the growth and functioning of organisms.",KB-014,"DNA, or deoxyribonucleic acid, carries the genetic instructions used in the growth and functioning of living organisms.",Supported
+"DNA does not carry genetic instructions.",KB-014,"DNA, or deoxyribonucleic acid, carries the genetic instructions used in the growth and functioning of living organisms.",Contradicted
+"DNA has no role in the functioning of living organisms.",KB-014,"DNA, or deoxyribonucleic acid, carries the genetic instructions used in the growth and functioning of living organisms.",Contradicted
+"The French Revolution began in 1789.",KB-015,"The French Revolution began in 1789 and led to the end of the French monarchy.",Supported
+"The French Revolution led to the end of the French monarchy.",KB-015,"The French Revolution began in 1789 and led to the end of the French monarchy.",Supported
+"The French Revolution began in 1800.",KB-015,"The French Revolution began in 1789 and led to the end of the French monarchy.",Contradicted
+"The French Revolution did not lead to the end of the French monarchy.",KB-015,"The French Revolution began in 1789 and led to the end of the French monarchy.",Contradicted
+"The Earth has exactly seven natural moons.",,,Unverifiable
+"The average temperature of the Sun is exactly 5000 degrees Celsius.",,,Unverifiable
+"Water freezes at exactly 10 degrees Celsius under standard atmospheric pressure.",,,Unverifiable
+"Bengaluru has a population of exactly 15 million people.",,,Unverifiable
+"Karnataka has exactly 35 districts.",,,Unverifiable
+"The largest city in Karnataka is Hubballi.",,,Unverifiable
+"The Moon takes exactly 20 days to complete one orbit around Earth.",,,Unverifiable
+"The human heart beats exactly 100 times every minute in every person.",,,Unverifiable
+"Photosynthesis occurs only during nighttime.",,,Unverifiable
+"The Great Wall of China is visible from every location on Earth.",,,Unverifiable
+"Python supports exactly 100 built-in functions.",,,Unverifiable
+"The human brain contains exactly 10 billion neurons.",,,Unverifiable
+"Every person requires exactly eight hours of sleep each night.",,,Unverifiable
+"The French Revolution lasted exactly five years.",,,Unverifiable
+"The Pacific Ocean contains exactly 25000 islands.",,,Unverifiable
