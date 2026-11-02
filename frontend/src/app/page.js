@@ -5,6 +5,8 @@ import Disclaimer from "../components/Disclaimer";
 import ErrorBanner from "../components/ErrorBanner";
 import Loader from "../components/Loader";
 import ResultsView from "../components/ResultsView";
+import BatchVerifier from "../components/BatchVerifier";
+import ReportButtons from "../components/ReportButtons";
 import { verifyText } from "../lib/api";
 import { countWords, validateInput, MAX_WORDS } from "../lib/validate";
 
@@ -14,6 +16,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const [mode, setMode] = useState("single"); // "single" | "batch"
   // Remember the API key in this browser so it survives page refreshes.
   useEffect(() => {
     try {
@@ -59,21 +62,39 @@ export default function Home() {
       <main className="container" id="verify">
         <h1>Verify AI-generated text</h1>
 
-        <label htmlFor="input-text">Text to verify</label>
-        <textarea
-          id="input-text"
-          rows={8}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Paste or type AI-generated text here…"
-        />
-        <div className="row">
-          <span className={words > MAX_WORDS ? "count over" : "count"}>
-            {words} / {MAX_WORDS} words
-          </span>
-          <button className="primary" onClick={handleVerify} disabled={loading}>
-            {loading ? "Verifying…" : "Verify"}
+        <div className="tabs" role="tablist" aria-label="Verification mode">
+          <button role="tab" aria-selected={mode === "single"} className={mode === "single" ? "tab active" : "tab"} onClick={() => setMode("single")}>
+            Single text
           </button>
+          <button role="tab" aria-selected={mode === "batch"} className={mode === "batch" ? "tab active" : "tab"} onClick={() => setMode("batch")}>
+            Batch (up to 50)
+          </button>
+        </div>
+
+        {mode === "single" && (
+          <>
+          <label htmlFor="input-text">Text to verify</label>
+          <textarea
+            id="input-text"
+            rows={8}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Paste or type AI-generated text here…"
+          />
+          <div className="row">
+            <span className={words > MAX_WORDS ? "count over" : "count"}>
+              {words} / {MAX_WORDS} words
+            </span>
+            <button className="primary" onClick={handleVerify} disabled={loading}>
+              {loading ? "Verifying…" : "Verify"}
+            </button>
+          </div>
+
+          </>
+        )}
+        {/* Kept mounted (just hidden) so switching tabs doesn't lose a batch in progress. */}
+        <div hidden={mode !== "batch"}>
+          <BatchVerifier apiKey={apiKey} />
         </div>
 
         <details className="dev-settings">
@@ -88,9 +109,14 @@ export default function Home() {
           />
         </details>
 
-        <ErrorBanner message={error} />
-        {loading && <Loader />}
-        <ResultsView result={result} />
+        {mode === "single" && (
+          <>
+            <ErrorBanner message={error} />
+            {loading && <Loader />}
+            <ResultsView result={result} />
+            {result && <ReportButtons entries={[{ label: "Text 1", status: "done", result }]} />}
+          </>
+        )}
         <Disclaimer />
       </main>
     </>
