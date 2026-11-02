@@ -1,5 +1,6 @@
 import socket
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -47,11 +48,12 @@ class TestLoadKnowledgeBase(unittest.TestCase):
         self.assertIn("source_id", kb[0])
         self.assertIn("text", kb[0])
 
-    def test_rejects_malformed_file(self, tmp_path=Path("/tmp")):
-        bad_file = tmp_path / "bad_kb.json"
-        bad_file.write_text('["not", "the right", "shape"]', encoding="utf-8")
-        with self.assertRaises(ValueError):
-            load_knowledge_base(bad_file)
+    def test_rejects_malformed_file(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            bad_file = Path(tmp_dir) / "bad_kb.json"
+            bad_file.write_text('["not", "the right", "shape"]', encoding="utf-8")
+            with self.assertRaises(ValueError):
+                load_knowledge_base(bad_file)
 
 
 class TestRetrieve(unittest.TestCase):
