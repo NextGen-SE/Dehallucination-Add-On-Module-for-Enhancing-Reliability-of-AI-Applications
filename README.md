@@ -214,3 +214,30 @@ skips installing the ML model packages, so the real-model test is skipped.
 - No knowledge-base registry or upload (REQ-9 via API); one configured KB file.
 - No NLI-failure fallback to similarity-only verification (SRS section 7).
 - No batch/evaluation endpoints (REQ-17/18); no HTTPS termination (NFR-8, deployment concern).
+
+
+## Running the tests
+
+```powershell
+python -m pip install -r requirements.txt -r requirements-calibration.txt
+python -m pytest -rs                      # all backend tests (fake models, no downloads)
+python -m pytest tests/test_integration_pipeline.py -v   # extraction -> retrieval -> NLI -> API
+python -m pytest tests/test_security.py -v               # auth, invalid input, no sensitive logging
+cd frontend; npm test                     # frontend tests
+```
+
+The 5 PostgreSQL tests in `tests/test_request_log.py` are skipped unless a dedicated
+test database is configured (CI runs them against a throwaway `postgres:15`):
+
+```powershell
+$env:TRUTHLAYER_TEST_DATABASE_URL="postgresql+psycopg://<user>:<password>@localhost:5432/truthlayer_test"
+python -m pytest tests/test_request_log.py -rs
+```
+
+## Evaluation and performance scripts (real models; first run downloads them)
+
+```powershell
+python scripts/evaluate_verification.py   # precision/recall/F1 -> results/verification_eval.{json,md}
+$env:TRUTHLAYER_TEST_KEY="<plaintext api key>"
+python scripts/perf_test.py               # NFR-1/2/3 -> results/performance_results.json (API must be running)
+```
