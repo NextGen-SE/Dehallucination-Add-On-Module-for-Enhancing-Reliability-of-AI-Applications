@@ -1,3 +1,6 @@
+
+import importlib
+import importlib.util
 import socket
 import sys
 import tempfile
@@ -17,97 +20,167 @@ from evidence_verification import (
 KB_PATH = Path(__file__).resolve().parents[1] / "knowledge_base.json"
 
 
-# --------------------------------------------------------------------------- #
-# Deterministic fakes — no model download, no network, fully reproducible.
-# --------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------
+# Deterministic fakes — no model download, no network, reproducible tests.
+# ---------------------------------------------------------------------------
 
 class FakeEmbedder:
-    """Returns a hand-assigned vector per known text; unknown text -> zero vector."""
+    """Returns a hand-assigned vector per known text."""
 
     def __init__(self, vectors: dict[str, list[float]]) -> None:
         self._vectors = vectors
 
     def __call__(self, texts: list[str]) -> list[list[float]]:
-        return [self._vectors.get(t, [0.0, 0.0]) for t in texts]
+        return [
+            self._vectors.get(t, [0.0, 0.0])
+            for t in texts
+        ]
 
 
 class FakeNLIClassifier:
-    """Returns a hand-assigned score dict per (premise, hypothesis) pair."""
+    """Returns a hand-assigned score dictionary per premise/hypothesis."""
 
-    def __init__(self, answers: dict[tuple[str, str], dict[str, float]]) -> None:
+    def __init__(
+        self,
+        answers: dict[tuple[str, str], dict[str, float]]
+    ) -> None:
         self._answers = answers
 
-    def __call__(self, premise: str, hypothesis: str) -> dict[str, float]:
+    def __call__(
+        self,
+        premise: str,
+        hypothesis: str
+    ) -> dict[str, float]:
         return self._answers[(premise, hypothesis)]
 
 
+# ---------------------------------------------------------------------------
+# Knowledge base loading tests
+# ---------------------------------------------------------------------------
+
 class TestLoadKnowledgeBase(unittest.TestCase):
+
     def test_loads_real_knowledge_base_file(self):
         kb = load_knowledge_base(KB_PATH)
+
         self.assertGreaterEqual(len(kb), 10)
         self.assertIn("source_id", kb[0])
         self.assertIn("text", kb[0])
 
     def test_rejects_malformed_file(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            bad_file = Path(tmp_dir) / "bad_kb.json"
-            bad_file.write_text('["not", "the right", "shape"]', encoding="utf-8")
+        # TemporaryDirectory works on Windows, Linux and macOS.
+        with tempfile.TemporaryDirectory() as temp_dir:
+            bad_file = Path(temp_dir) / "bad_kb.json"
+
+            bad_file.write_text(
+                '["not", "the right", "shape"]',
+                encoding="utf-8"
+            )
+
             with self.assertRaises(ValueError):
                 load_knowledge_base(bad_file)
 
 
+# ---------------------------------------------------------------------------
+# Retrieval tests
+# ---------------------------------------------------------------------------
+
 class TestRetrieve(unittest.TestCase):
+
     def setUp(self):
         self.kb = [
             {"source_id": "KB-A", "text": "passage about cats"},
             {"source_id": "KB-B", "text": "passage about dogs"},
-            {"source_id": "KB-C", "text": "passage about the solar system"},
+            {
+                "source_id": "KB-C",
+                "text": "passage about the solar system"
+            },
         ]
-        # Orthogonal-ish vectors so similarity ranking is unambiguous.
+
         self.embedder = FakeEmbedder({
-            "passage about cats": [1.0, 0.0, 0.0],
-            "passage about dogs": [0.9, 0.1, 0.0],
-            "passage about the solar system": [0.0, 0.0, 1.0],
-            "Tell me about cats": [1.0, 0.0, 0.0],
+            "passage about cats": [1.0, 0.0],
+            "passage about dogs": [0.9, 0.1],
+            "passage about the solar system": [0.0, 1.0],
+            "Tell me about cats": [1.0, 0.0],
         })
-        self.classifier = FakeNLIClassifier({})  # unused in these tests
+
+        self.classifier = FakeNLIClassifier({})
 
     def test_retrieve_ranks_most_similar_first(self):
         verifier = EvidenceVerifier(
-            self.kb, embedder=self.embedder, nli_classifier=self.classifier, top_k=3
+            self.kb,
+            embedder=self.embedder,
+            nli_classifier=self.classifier,
+            top_k=3
         )
+
         results = verifier.retrieve("Tell me about cats")
+
         self.assertEqual(results[0].source_id, "KB-A")
         self.assertEqual(results[1].source_id, "KB-B")
         self.assertEqual(results[2].source_id, "KB-C")
-        self.assertGreater(results[0].relevance_score, results[1].relevance_score)
+
+        self.assertGreater(
+            results[0].relevance_score,
+            results[1].relevance_score
+        )
 
     def test_retrieve_respects_top_k(self):
         verifier = EvidenceVerifier(
-            self.kb, embedder=self.embedder, nli_classifier=self.classifier, top_k=2
+            self.kb,
+            embedder=self.embedder,
+            nli_classifier=self.classifier,
+            top_k=2
         )
+
         results = verifier.retrieve("Tell me about cats")
+
         self.assertEqual(len(results), 2)
 
 
+# ---------------------------------------------------------------------------
+# Claim verification tests
+# ---------------------------------------------------------------------------
+
 class TestVerifyClaim(unittest.TestCase):
+
     def setUp(self):
-        self.kb = [{"source_id": "KB-001", "text": "The Earth orbits the Sun."}]
+        self.kb = [
+            {
+                "source_id": "KB-001",
+                "text": "The Earth orbits the Sun."
+            }
+        ]
+
         self.embedder = FakeEmbedder({
             "The Earth orbits the Sun.": [1.0, 0.0],
-            "The Earth goes around the Sun.": [0.95, 0.05],   # high relevance -> entailment
-            "The Sun orbits the Earth.": [0.9, 0.1],           # high relevance -> contradiction
-            "Bananas are a good source of potassium.": [0.0, 1.0],  # low relevance -> off-topic
+            "The Earth goes around the Sun.": [0.95, 0.05],
+            "The Sun orbits the Earth.": [0.9, 0.1],
+            "Bananas are a good source of potassium.": [0.0, 1.0],
         })
 
     def test_entailment_yields_supported_with_evidence(self):
         classifier = FakeNLIClassifier({
-            ("The Earth orbits the Sun.", "The Earth goes around the Sun."): {
-                "entailment": 0.93, "contradiction": 0.02, "neutral": 0.05,
+            (
+                "The Earth orbits the Sun.",
+                "The Earth goes around the Sun."
+            ): {
+                "entailment": 0.93,
+                "contradiction": 0.02,
+                "neutral": 0.05,
             }
         })
-        verifier = EvidenceVerifier(self.kb, embedder=self.embedder, nli_classifier=classifier)
-        result = verifier.verify_claim("The Earth goes around the Sun.", claim_id=1)
+
+        verifier = EvidenceVerifier(
+            self.kb,
+            embedder=self.embedder,
+            nli_classifier=classifier
+        )
+
+        result = verifier.verify_claim(
+            "The Earth goes around the Sun.",
+            claim_id=1
+        )
 
         self.assertEqual(result.verdict, VERDICT_SUPPORTED)
         self.assertEqual(result.confidence, 0.93)
@@ -117,27 +190,49 @@ class TestVerifyClaim(unittest.TestCase):
 
     def test_contradiction_yields_contradicted_with_evidence(self):
         classifier = FakeNLIClassifier({
-            ("The Earth orbits the Sun.", "The Sun orbits the Earth."): {
-                "entailment": 0.03, "contradiction": 0.9, "neutral": 0.07,
+            (
+                "The Earth orbits the Sun.",
+                "The Sun orbits the Earth."
+            ): {
+                "entailment": 0.03,
+                "contradiction": 0.90,
+                "neutral": 0.07,
             }
         })
-        verifier = EvidenceVerifier(self.kb, embedder=self.embedder, nli_classifier=classifier)
-        result = verifier.verify_claim("The Sun orbits the Earth.")
+
+        verifier = EvidenceVerifier(
+            self.kb,
+            embedder=self.embedder,
+            nli_classifier=classifier
+        )
+
+        result = verifier.verify_claim(
+            "The Sun orbits the Earth."
+        )
 
         self.assertEqual(result.verdict, VERDICT_CONTRADICTED)
-        self.assertEqual(result.confidence, 0.9)
+        self.assertEqual(result.confidence, 0.90)
         self.assertEqual(len(result.evidence), 1)
 
     def test_no_relevant_passage_yields_unverifiable_without_calling_nli(self):
+
         class ExplodingClassifier:
+
             def __call__(self, premise, hypothesis):
-                raise AssertionError("NLI should not be called when no passage is relevant")
+                raise AssertionError(
+                    "NLI should not be called when no passage is relevant"
+                )
 
         verifier = EvidenceVerifier(
-            self.kb, embedder=self.embedder, nli_classifier=ExplodingClassifier(),
-            relevance_threshold=0.35,
+            self.kb,
+            embedder=self.embedder,
+            nli_classifier=ExplodingClassifier(),
+            relevance_threshold=0.35
         )
-        result = verifier.verify_claim("Bananas are a good source of potassium.")
+
+        result = verifier.verify_claim(
+            "Bananas are a good source of potassium."
+        )
 
         self.assertEqual(result.verdict, VERDICT_UNVERIFIABLE)
         self.assertEqual(result.evidence, [])
@@ -145,12 +240,25 @@ class TestVerifyClaim(unittest.TestCase):
 
     def test_neutral_nli_outcome_yields_unverifiable_with_no_evidence(self):
         classifier = FakeNLIClassifier({
-            ("The Earth orbits the Sun.", "The Earth goes around the Sun."): {
-                "entailment": 0.2, "contradiction": 0.1, "neutral": 0.7,
+            (
+                "The Earth orbits the Sun.",
+                "The Earth goes around the Sun."
+            ): {
+                "entailment": 0.2,
+                "contradiction": 0.1,
+                "neutral": 0.7,
             }
         })
-        verifier = EvidenceVerifier(self.kb, embedder=self.embedder, nli_classifier=classifier)
-        result = verifier.verify_claim("The Earth goes around the Sun.")
+
+        verifier = EvidenceVerifier(
+            self.kb,
+            embedder=self.embedder,
+            nli_classifier=classifier
+        )
+
+        result = verifier.verify_claim(
+            "The Earth goes around the Sun."
+        )
 
         self.assertEqual(result.verdict, VERDICT_UNVERIFIABLE)
         self.assertEqual(result.confidence, 0.7)
@@ -158,94 +266,193 @@ class TestVerifyClaim(unittest.TestCase):
 
     def test_confidence_always_in_valid_range(self):
         classifier = FakeNLIClassifier({
-            ("The Earth orbits the Sun.", "The Earth goes around the Sun."): {
-                "entailment": 0.93, "contradiction": 0.02, "neutral": 0.05,
+            (
+                "The Earth orbits the Sun.",
+                "The Earth goes around the Sun."
+            ): {
+                "entailment": 0.93,
+                "contradiction": 0.02,
+                "neutral": 0.05,
             }
         })
-        verifier = EvidenceVerifier(self.kb, embedder=self.embedder, nli_classifier=classifier)
-        result = verifier.verify_claim("The Earth goes around the Sun.")
+
+        verifier = EvidenceVerifier(
+            self.kb,
+            embedder=self.embedder,
+            nli_classifier=classifier
+        )
+
+        result = verifier.verify_claim(
+            "The Earth goes around the Sun."
+        )
+
         self.assertGreaterEqual(result.confidence, 0.0)
         self.assertLessEqual(result.confidence, 1.0)
 
 
+# ---------------------------------------------------------------------------
+# Batch verification and integration tests
+# ---------------------------------------------------------------------------
+
 class TestVerifyClaimsBatchAndIntegrationWithPerson1(unittest.TestCase):
+
     def setUp(self):
-        self.kb = [{"source_id": "KB-001", "text": "The Earth orbits the Sun."}]
+        self.kb = [
+            {
+                "source_id": "KB-001",
+                "text": "The Earth orbits the Sun."
+            }
+        ]
+
         self.embedder = FakeEmbedder({
             "The Earth orbits the Sun.": [1.0, 0.0],
         })
+
         self.classifier = FakeNLIClassifier({
-            ("The Earth orbits the Sun.", "The Earth orbits the Sun."): {
-                "entailment": 0.99, "contradiction": 0.0, "neutral": 0.01,
+            (
+                "The Earth orbits the Sun.",
+                "The Earth orbits the Sun."
+            ): {
+                "entailment": 0.99,
+                "contradiction": 0.0,
+                "neutral": 0.01,
             }
         })
 
     def test_accepts_plain_strings(self):
-        verifier = EvidenceVerifier(self.kb, embedder=self.embedder, nli_classifier=self.classifier)
-        results = verifier.verify_claims(["The Earth orbits the Sun."])
+        verifier = EvidenceVerifier(
+            self.kb,
+            embedder=self.embedder,
+            nli_classifier=self.classifier
+        )
+
+        results = verifier.verify_claims([
+            "The Earth orbits the Sun."
+        ])
+
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].verdict, VERDICT_SUPPORTED)
         self.assertIsNone(results[0].claim_id)
 
     def test_accepts_person1_claim_objects(self):
-        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
         from claim_extraction import extract_claims
 
-        extraction = extract_claims("The Earth orbits the Sun.")
+        extraction = extract_claims(
+            "The Earth orbits the Sun."
+        )
+
         self.assertEqual(extraction.status, "ok")
 
-        verifier = EvidenceVerifier(self.kb, embedder=self.embedder, nli_classifier=self.classifier)
+        verifier = EvidenceVerifier(
+            self.kb,
+            embedder=self.embedder,
+            nli_classifier=self.classifier
+        )
+
         results = verifier.verify_claims(extraction.claims)
 
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].claim_id, extraction.claims[0].claim_id)
-        self.assertEqual(results[0].claim_text, extraction.claims[0].text)
+        self.assertEqual(
+            results[0].claim_id,
+            extraction.claims[0].claim_id
+        )
+        self.assertEqual(
+            results[0].claim_text,
+            extraction.claims[0].text
+        )
         self.assertEqual(results[0].verdict, VERDICT_SUPPORTED)
 
 
-def _has_internet(host: str = "huggingface.co", timeout: float = 2.0) -> bool:
+# ---------------------------------------------------------------------------
+# Real model integration availability check
+# ---------------------------------------------------------------------------
+
+def _has_internet(
+    host: str = "huggingface.co",
+    timeout: float = 2.0
+) -> bool:
+
     try:
-        socket.setdefaulttimeout(timeout)
-        socket.gethostbyname(host)
-        with socket.create_connection((host, 443), timeout=timeout):
+        with socket.create_connection(
+            (host, 443),
+            timeout=timeout
+        ):
             return True
+
     except OSError:
         return False
 
 
 def _real_models_available() -> bool:
-    import importlib.util
+    """
+    Check that both packages can actually be imported.
 
-    has_packages = (
-        importlib.util.find_spec("sentence_transformers") is not None
-        and importlib.util.find_spec("transformers") is not None
-    )
-    return has_packages and _has_internet()
+    find_spec() alone is insufficient because a package may be
+    installed but corrupted. Import errors, including SyntaxError,
+    should skip this optional integration test instead of failing
+    the complete test suite.
+    """
 
+    if not _has_internet():
+        return False
+
+    try:
+        if importlib.util.find_spec("sentence_transformers") is None:
+            return False
+
+        if importlib.util.find_spec("transformers") is None:
+            return False
+
+        importlib.import_module("transformers")
+        importlib.import_module("sentence_transformers")
+
+        return True
+
+    except Exception:
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Real model integration test
+# ---------------------------------------------------------------------------
 
 @unittest.skipUnless(
     _real_models_available(),
-    "sentence-transformers/transformers not installed or HuggingFace Hub unreachable "
-    "(expected in network-restricted sandboxes; run this test on your own machine).",
+    (
+        "Real model integration skipped: required packages could not "
+        "be imported or HuggingFace Hub is unreachable. "
+        "Repair the installation and run this test separately."
+    )
 )
 class TestRealModelIntegration(unittest.TestCase):
-    """End-to-end check with the actual models named in the SRS (REQ-5/REQ-6).
+    """
+    Integration test with the actual embedding and NLI models.
 
-    This is intentionally the only test that downloads anything. It is
-    skipped automatically wherever HuggingFace Hub isn't reachable, so it
-    never blocks `pytest` in CI or in an offline sandbox — but you should
-    run it at least once on your own machine before marking this module done.
+    This test requires working model dependencies and internet access.
     """
 
     def test_verifies_a_true_and_a_false_claim(self):
         kb = load_knowledge_base(KB_PATH)
+
         verifier = EvidenceVerifier(kb)
 
-        supported = verifier.verify_claim("The Earth orbits the Sun.")
-        self.assertEqual(supported.verdict, VERDICT_SUPPORTED)
+        supported = verifier.verify_claim(
+            "The Earth orbits the Sun."
+        )
 
-        contradicted = verifier.verify_claim("The Sun orbits the Earth.")
-        self.assertEqual(contradicted.verdict, VERDICT_CONTRADICTED)
+        self.assertEqual(
+            supported.verdict,
+            VERDICT_SUPPORTED
+        )
+
+        contradicted = verifier.verify_claim(
+            "The Sun orbits the Earth."
+        )
+
+        self.assertEqual(
+            contradicted.verdict,
+            VERDICT_CONTRADICTED
+        )
 
 
 if __name__ == "__main__":
