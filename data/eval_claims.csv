@@ -74,3 +74,78 @@ The human brain contains exactly 10 billion neurons.,Unverifiable
 Every person requires exactly eight hours of sleep each night.,Unverifiable
 The French Revolution lasted exactly five years.,Unverifiable
 The Pacific Ocean contains exactly 25000 islands.,Unverifiable
+"The Earth takes about 365.25 days to go around the Sun.",Supported
+"Water molecules consist of hydrogen and oxygen atoms.",Supported
+"Bengaluru serves as Karnataka's capital.",Supported
+"Karnataka lies in the southwestern part of India.",Supported
+"The Moon orbits the Earth as a natural satellite.",Supported
+"Mount Everest is the highest mountain on Earth above sea level.",Supported
+"The human heart is divided into four chambers.",Supported
+"Plants turn sunlight, carbon dioxide and water into food through photosynthesis.",Supported
+"The Great Wall of China was built by multiple dynasties to guard against invasions.",Supported
+"Python is a high-level programming language.",Supported
+"Light moves through a vacuum at about 299,792 kilometers per second.",Supported
+"India ended British rule on 15 August 1947.",Supported
+"The Pacific Ocean is the biggest of the five oceans.",Supported
+"DNA stores the genetic instructions of living things.",Supported
+"The French Revolution started in 1789.",Supported
+"The Moon is not made of cheese.",Supported
+"Water has the chemical formula H2O.",Supported
+"The Himalayas are home to Mount Everest.",Supported
+"The heart has two atria and two ventricles.",Supported
+"The French monarchy ended as a result of the French Revolution.",Supported
+"The Earth takes about 30 days to go around the Sun.",Contradicted
+"Water is made only of carbon atoms.",Contradicted
+"Chennai is the capital city of Karnataka.",Contradicted
+"Karnataka is located in the far northeast of India.",Contradicted
+"The Moon is a star that produces its own light.",Contradicted
+"Mount Everest is located in the Andes.",Contradicted
+"The human heart has only two chambers.",Contradicted
+"Photosynthesis is how animals produce food from meat.",Contradicted
+"The Great Wall of China was built in a single decade by one emperor.",Contradicted
+"Python was first released in 1975.",Contradicted
+"The speed of light in a vacuum is approximately 3000 kilometers per second.",Contradicted
+"India gained independence from British rule in 1965.",Contradicted
+"The Atlantic Ocean is the largest ocean on Earth.",Contradicted
+"DNA is a type of metal used in construction.",Contradicted
+"The French Revolution began in 1650.",Contradicted
+"The Sun orbits the Earth once every 365.25 days.",Contradicted
+"Water is made of helium and nitrogen.",Contradicted
+"Mount Everest is the shortest mountain on Earth.",Contradicted
+"The human heart has six chambers.",Contradicted
+"The French Revolution strengthened the French monarchy and ended it never.",Contradicted
+"The Amazon River flows through Brazil.",Unverifiable
+"Tokyo is the capital of Japan.",Unverifiable
+"The Eiffel Tower is located in Paris.",Unverifiable
+"Shakespeare wrote the play Hamlet.",Unverifiable
+"Mount Kilimanjaro is the tallest mountain in Africa.",Unverifiable
+"The Nile is the longest river in Africa.",Unverifiable
+"Mars has two small moons.",Unverifiable
+"Jupiter is the largest planet in the Solar System.",Unverifiable
+"Gold has the chemical symbol Au.",Unverifiable
+"The Sahara is the largest hot desert in the world.",Unverifiable
+"Leonardo da Vinci painted the Mona Lisa.",Unverifiable
+"Antarctica is the coldest continent.",Unverifiable
+"Sodium chloride is commonly known as table salt.",Unverifiable
+"The human body has 206 bones in adulthood.",Unverifiable
+"Albert Einstein developed the theory of relativity.",Unverifiable
+"Canada has ten provinces and three territories.",Unverifiable
+"The Titanic sank in 1912.",Unverifiable
+"Bitcoin was introduced in 2009.",Unverifiable
+"The Berlin Wall fell in 1989.",Unverifiable
+"Java is a programming language developed by Sun Microsystems.",Unverifiable
+"Honey never spoils when stored properly.",Unverifiable
+"Octopuses have three hearts.",Unverifiable
+"Mumbai is the financial capital of India.",Unverifiable
+"The Taj Mahal is located in Agra.",Unverifiable
+"Neil Armstrong was the first person to walk on the Moon.",Unverifiable
+"Lightning is hotter than the surface of the Sun.",Unverifiable
+"The Mississippi River is in the United States.",Unverifiable
+"Venus is the hottest planet in the Solar System.",Unverifiable
+"The first Olympic Games of the modern era were held in 1896.",Unverifiable
+"Coffee is made from roasted beans of the Coffea plant.",Unverifiable
+"Penguins live mostly in the Southern Hemisphere.",Unverifiable
+"Diamond is a form of carbon.",Unverifiable
+"The Colosseum is in Rome.",Unverifiable
+"Blue whales are the largest animals ever known to have lived.",Unverifiable
+"Wi-Fi uses radio waves to transmit data.",Unverifiable
