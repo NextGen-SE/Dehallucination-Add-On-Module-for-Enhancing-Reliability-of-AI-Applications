@@ -1,0 +1,43 @@
+{
+  "text_words": 196,
+  "nfr3_retrieval": {
+    "n": 48,
+    "mean": 0.014907837500989748,
+    "p95": 0.0254422000143677,
+    "max": 0.027154499985044822,
+    "target_seconds": 0.5,
+    "passed": true
+  },
+  "nfr1_latency": {
+    "n": 5,
+    "mean": 1.3875088599917944,
+    "p95": 1.4901156999985687,
+    "max": 1.4901156999985687,
+    "words": 196,
+    "claims_per_request": 20,
+    "server_processing_ms_mean": 1376.2,
+    "target_seconds": 5.0,
+    "passed": true
+  },
+  "nfr2_concurrency": {
+    "requests": 10,
+    "statuses": [
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200
+    ],
+    "all_succeeded": true,
+    "wall_seconds": 14.963692299992545,
+    "slowest_seconds": 14.095426800020505,
+    "fastest_seconds": 3.09053230000427,
+    "note": "Pipeline serialises model calls with a lock (api/pipeline.py), so requests queue; NFR-2 allows queuing but the slowest request includes waiting time.",
+    "passed": true
+  }
+}
