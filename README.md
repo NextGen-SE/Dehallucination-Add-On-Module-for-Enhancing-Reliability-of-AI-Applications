@@ -184,11 +184,14 @@ All errors return `{"detail": "<message>"}`.
 - **500**: pipeline failure; internal details are logged server-side only.
 
 ### Request log (PostgreSQL)
-One row per `/verify` request (including 400/401/500): timestamp, status
-code, processing time, input word/char counts, knowledge base ID, claim and
-per-verdict counts, error type. The submitted text, claims, evidence, API
-key and client IP are **not** stored. Rows older than
-`TRUTHLAYER_LOG_RETENTION_DAYS` (default 30) are purged on startup.
+One row per `/verify` request (including 400/401/500): timestamp (UTC, when
+the request arrived), status code, processing time, input word/char counts,
+knowledge base ID, claim and per-verdict counts, error type. The submitted
+text, claims, evidence, API key and client IP are **not** stored. Rows older
+than `TRUTHLAYER_LOG_RETENTION_DAYS` (default 30) are purged on startup. If a
+log write fails, the request still succeeds and only the exception type is
+logged. Read rows back (newest first) with
+`SqlRequestLogger.from_url(url).recent(limit=100)`.
 
 ### Tests
 ```powershell
