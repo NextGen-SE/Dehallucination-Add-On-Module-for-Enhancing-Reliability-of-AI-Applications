@@ -1,0 +1,10 @@
+# Backend build context: deny everything, then allow only what the API image copies.
+# Keeps .env, .venv, .git, tests, frontend and caches out of the image.
+*
+!requirements.txt
+!api/
+!claim_extraction.py
+!evidence_verification.py
+!knowledge_base.json
+**/__pycache__
+**/*.py[cod]
