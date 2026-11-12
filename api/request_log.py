@@ -26,6 +26,7 @@ from sqlalchemy import (
     create_engine,
     delete,
     insert,
+    select,
 )
 from sqlalchemy.engine import Engine
 
@@ -98,6 +99,25 @@ class SqlRequestLogger:
     def record(self, entry: RequestLogEntry) -> None:
         with self._engine.begin() as conn:
             conn.execute(insert(request_logs).values(**asdict(entry)))
+
+    def recent(self, limit: int = 100) -> list[RequestLogEntry]:
+        """Most recent rows first, for debugging and evaluation (metadata only)."""
+        if limit < 1:
+            raise ValueError("limit must be at least 1")
+        query = (
+            select(request_logs)
+            .order_by(request_logs.c.created_at.desc(), request_logs.c.id.desc())
+            .limit(limit)
+        )
+        with self._engine.connect() as conn:
+            rows = conn.execute(query).mappings().all()
+        entries = []
+        for row in rows:
+            values = {k: v for k, v in row.items() if k != "id"}
+            if values["created_at"].tzinfo is None:  # SQLite drops the offset; stored as UTC
+                values["created_at"] = values["created_at"].replace(tzinfo=timezone.utc)
+            entries.append(RequestLogEntry(**values))
+        return entries
 
     def purge_older_than(self, days: int) -> int:
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)

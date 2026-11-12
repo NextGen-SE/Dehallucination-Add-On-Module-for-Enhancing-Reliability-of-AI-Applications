@@ -192,6 +192,17 @@ class SqlLoggerContract:
         self.assertEqual(rows[1]["error_type"], "unauthorized")
         self.assertIsNone(rows[1]["claim_count"])
 
+    def test_recent_round_trips_entries_newest_first(self):
+        older = _entry(created_at=_days_ago(2), processing_time_ms=40)
+        newer = _entry(created_at=_days_ago(1), status_code=500, error_type="pipeline_error",
+                       claim_count=None, supported_count=None, contradicted_count=None,
+                       unverifiable_count=None)
+        self.logger.record(older)
+        self.logger.record(newer)
+        self.assertEqual(self.logger.recent(), [newer, older])
+        self.assertEqual(self.logger.recent(limit=1), [newer])
+        self.assertEqual(self.logger.recent()[0].created_at.utcoffset(), timedelta(0))
+
     def test_purge_removes_expired_and_keeps_fresh(self):
         self.logger.record(_entry(created_at=_days_ago(40), status_code=500))
         self.logger.record(_entry(created_at=_days_ago(31), status_code=401))

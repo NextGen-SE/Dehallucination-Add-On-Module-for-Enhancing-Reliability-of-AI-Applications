@@ -1,0 +1,73 @@
+# TruthLayer: PostgreSQL 15 + FastAPI backend + Next.js frontend.
+# Values come from ./.env (copy .env.example). Usage: see README "Run with Docker".
+name: truthlayer
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-truthlayer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-truthlayer}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      # Host port 5433 by default so it doesn't clash with a local PostgreSQL.
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build: .
+    environment:
+      TRUTHLAYER_API_KEY_HASHES: ${TRUTHLAYER_API_KEY_HASHES:?Set TRUTHLAYER_API_KEY_HASHES in .env (python -m api.auth)}
+      # Built from the POSTGRES_* values; "db" is the service name on the compose network.
+      TRUTHLAYER_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-truthlayer}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-truthlayer}
+      TRUTHLAYER_LOG_RETENTION_DAYS: ${TRUTHLAYER_LOG_RETENTION_DAYS:-30}
+      TRUTHLAYER_KNOWLEDGE_BASE_ID: ${TRUTHLAYER_KNOWLEDGE_BASE_ID:-wikipedia_subset}
+      TRUTHLAYER_KNOWLEDGE_BASE_PATH: ${TRUTHLAYER_KNOWLEDGE_BASE_PATH:-knowledge_base.json}
+      # The browser loads the UI from this origin and calls the API cross-origin.
+      TRUTHLAYER_CORS_ORIGINS: ${TRUTHLAYER_CORS_ORIGINS:-http://localhost:3000}
+    volumes:
+      # Embedding/NLI models (~0.6 GB) download once on first start and persist here.
+      - hf-cache:/home/app/.cache/huggingface
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # Startup finishes (and the port opens) only after the models load and the DB is reachable.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/openapi.json', timeout=5)"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10m  # first start downloads the models
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Browser-side URL of the backend (the published port above), baked in at build time.
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+        NEXT_PUBLIC_USE_MOCK: "false"
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  hf-cache:

@@ -1,0 +1,9 @@
+node_modules
+.next
+coverage
+__tests__
+.env*
+!.env.local.example
+npm-debug.log*
+Dockerfile
+.dockerignore

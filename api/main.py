@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import time
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -167,7 +168,8 @@ def create_app(
             return await call_next(request)
 
         fields = _log_fields(request)
-        started = time.perf_counter()
+        received_at = datetime.now(timezone.utc)  # wall-clock arrival time for the row
+        started = time.perf_counter()  # monotonic, for the duration
         status_code = 500
         try:
             response = await call_next(request)
@@ -181,6 +183,7 @@ def create_app(
                 path=request.url.path,
                 status_code=status_code,
                 processing_time_ms=round((time.perf_counter() - started) * 1000),
+                created_at=received_at,
                 **fields,
             )
             try:

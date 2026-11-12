@@ -1,17 +1,28 @@
-
 name: Backend tests
 
 on:
-  push:
-    branches: [main]
   pull_request:
+  push:
+    # main plus team working branches, so a push is checked before a PR exists.
+    branches:
+      - main
+      - "sprint-*"
+      - "feature/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+# A newer push to the same branch/PR cancels the now-outdated run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pytest:
+    name: pytest (Python 3.11, PostgreSQL 15)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       # Throwaway database that exists only for this job. Its *_test name
@@ -31,6 +42,8 @@ jobs:
           --health-retries 10
 
     env:
+      # CI-only credentials for the throwaway service above; not a secret.
+      # Setting this makes the PostgreSQL tests run instead of skipping.
       TRUTHLAYER_TEST_DATABASE_URL: postgresql+psycopg://truthlayer:truthlayer-ci-only@localhost:5432/truthlayer_test
 
     steps:
@@ -40,6 +53,9 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-calibration.txt
 
       - name: Install dependencies (without ML model packages)
         # sentence-transformers/transformers pull in PyTorch and model
@@ -51,4 +67,6 @@ jobs:
           python -m pip install -r requirements-calibration.txt
 
       - name: Run tests
-        run: python -m pytest -rs
+        # -ra: end-of-run summary of every failure, error and skip (with reason).
+        # pytest exits non-zero on any failure or error, which fails this check.
+        run: python -m pytest -ra
