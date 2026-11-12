@@ -207,10 +207,8 @@ must differ from `TRUTHLAYER_DATABASE_URL`, and the URL may not carry
 tests check `current_database()` and then run inside a randomly named
 `tl_test_*` schema that is dropped afterwards, so no other rows can be purged.
 
-CI (`.github/workflows/backend-tests.yml`) runs `pytest` on Python 3.11 for
-pull requests and pushes to `main`, with a throwaway `postgres:15` service
-as the `truthlayer_test` database, so the PostgreSQL tests run there too. It
-skips installing the ML model packages, so the real-model test is skipped.
+CI runs these tests, including the PostgreSQL ones, on every pull request;
+see [Continuous integration](#continuous-integration).
 
 ### Known gaps
 - Confidence is the raw NLI score; calibration (REQ-11) is not implemented.
@@ -321,12 +319,41 @@ python -m pytest tests/test_security.py -v               # auth, invalid input, 
 cd frontend; npm test                     # frontend tests
 ```
 
-The 5 PostgreSQL tests in `tests/test_request_log.py` are skipped unless a dedicated
-test database is configured (CI runs them against a throwaway `postgres:15`):
+The 6 PostgreSQL tests in `tests/test_request_log.py` are skipped unless a dedicated
+test database is configured. To run them locally the way CI does, start a
+throwaway `postgres:15` container (host port 5434, so it doesn't clash with a
+local PostgreSQL or the Docker stack's 5433) and point the tests at it:
 
 ```powershell
-$env:TRUTHLAYER_TEST_DATABASE_URL="postgresql+psycopg://<user>:<password>@localhost:5432/truthlayer_test"
-python -m pytest tests/test_request_log.py -rs
+docker run -d --rm --name truthlayer-test-db -p 127.0.0.1:5434:5432 -e POSTGRES_USER=truthlayer -e POSTGRES_PASSWORD=truthlayer-ci-only -e POSTGRES_DB=truthlayer_test postgres:15
+docker exec truthlayer-test-db pg_isready -h 127.0.0.1    # repeat until "accepting connections"
+$env:TRUTHLAYER_TEST_DATABASE_URL="postgresql+psycopg://truthlayer:truthlayer-ci-only@127.0.0.1:5434/truthlayer_test"
+python -m pytest -ra                      # now 0 PostgreSQL skips
+docker stop truthlayer-test-db            # removes it (--rm); nothing is kept
+```
+Use `127.0.0.1`, not `localhost`: on Windows `localhost` tries IPv6 first, and
+each connection then stalls for several seconds, which makes these tests appear to hang.
+
+### Continuous integration
+
+`.github/workflows/backend-tests.yml` ("Backend tests") is the check shown on
+pull requests. It runs on every pull request, on pushes to `main`, `sprint-*`
+and `feature/**` branches, and manually from the Actions tab (*Run workflow*).
+The job uses Python 3.11 with a throwaway `postgres:15` service (database
+`truthlayer_test`, CI-only credentials), so the PostgreSQL tests run instead
+of skipping. A failing test fails the check, and the end of the log lists every
+failure and skip.
+
+To save time, CI does not install `sentence-transformers`/`transformers`
+(PyTorch plus about 0.6 GB of model downloads), so exactly one test, the
+real-model integration test in `tests/test_evidence_verification.py`, is
+skipped there. Run it locally after `pip install -r requirements.txt`, with
+internet access. The CI-equivalent install (PowerShell):
+
+```powershell
+Get-Content requirements.txt | Where-Object { $_ -notmatch '^(sentence-transformers|transformers)\b' } | Set-Content -Encoding utf8 $env:TEMP\requirements-ci.txt
+python -m pip install -r $env:TEMP\requirements-ci.txt -r requirements-calibration.txt
+python -m pytest -ra
 ```
 
 ## Evaluation and performance scripts (real models; first run downloads them)
