@@ -219,6 +219,98 @@ skips installing the ML model packages, so the real-model test is skipped.
 - No batch/evaluation endpoints (REQ-17/18); no HTTPS termination (NFR-8, deployment concern).
 
 
+## Run with Docker (backend + frontend + PostgreSQL)
+
+`compose.yaml` runs three containers: `db` (PostgreSQL 15), `backend`
+(FastAPI, built from `Dockerfile`) and `frontend` (Next.js, built from
+`frontend/Dockerfile`). The browser loads the UI from `localhost:3000` and
+calls the API directly at `localhost:8000`; the backend reaches the database
+by its service name, `db`.
+
+### Prerequisites
+- Docker Desktop (Compose v2), with about 4 GB of free disk space.
+- Internet access on the first start: the backend downloads its embedding and
+  NLI models (~0.6 GB) into the `hf-cache` volume. Later starts reuse them.
+- Python on the host, only to generate an API key (any Python 3.11+, no packages).
+- Free host ports 3000, 8000 and 5433.
+
+### 1. Configure `.env`
+From the repo root (PowerShell):
+```powershell
+copy .env.example .env
+python -m api.auth                 # prints a new API key and its SHA-256 hash
+python -c "import secrets; print(secrets.token_urlsafe(24))"   # a database password
+```
+In `.env`, set:
+- `TRUTHLAYER_API_KEY_HASHES=` to the **hash** (never the key). Keep the key
+  itself somewhere safe; you will paste it into the UI. For several keys,
+  separate the hashes with commas.
+- `POSTGRES_PASSWORD=` to the generated password. Use only letters, digits,
+  `-` and `_`, since it ends up inside the database URL.
+
+Compose builds `TRUTHLAYER_DATABASE_URL` itself (pointing at `db`), so leave
+that line as it is. `.env` is git-ignored; never commit it.
+
+### 2. Start
+```powershell
+docker compose up -d --build
+docker compose ps                  # wait until all three show "(healthy)"
+```
+On the first start the backend stays `health: starting` for a few minutes
+while it downloads the models (`docker compose logs -f backend` shows progress).
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:3000 (paste your API key into the API key field) |
+| Backend API | http://localhost:8000/verify |
+| API docs | http://localhost:8000/docs |
+| PostgreSQL | `localhost:5433` (user/db `truthlayer`, password from `.env`) |
+
+All ports are bound to `127.0.0.1`, so they're reachable only from your machine.
+
+Smoke test (PowerShell; expect 401 without a key, then 200 with one):
+```powershell
+curl.exe -s -X POST http://localhost:8000/verify -H "Content-Type: application/json" -d '{\"text\": \"The Earth orbits the Sun.\"}'
+curl.exe -s -X POST http://localhost:8000/verify -H "Content-Type: application/json" -H "X-API-Key: <your key>" -d '{\"text\": \"The Earth orbits the Sun.\"}'
+```
+
+### Everyday commands
+```powershell
+docker compose logs -f backend     # or frontend / db; all services: docker compose logs -f
+docker compose up -d --build       # rebuild and restart after code changes
+docker compose build frontend      # rebuild one image
+docker compose restart backend     # e.g. after editing .env (use up -d to apply compose.yaml changes)
+docker compose down                # stop and remove containers; data and model cache are kept
+```
+`docker compose down -v` also deletes the `pgdata` (request logs) and
+`hf-cache` (models) volumes. Only use it when you want a clean slate.
+
+Request logs in the database:
+```powershell
+docker compose exec db psql -U truthlayer -d truthlayer -c "SELECT created_at, status_code, processing_time_ms, claim_count FROM request_logs ORDER BY id DESC LIMIT 10"
+```
+
+### Troubleshooting
+- **`required variable ... is missing a value`**: `.env` is missing, or
+  `TRUTHLAYER_API_KEY_HASHES` / `POSTGRES_PASSWORD` is empty. Run compose from
+  the repo root, where `.env` lives.
+- **Backend restarts with `ConfigError`**: the hash is not a 64-character hex
+  SHA-256. Paste the hash printed by `python -m api.auth`, not the key.
+- **Backend stuck at `health: starting`**: check `docker compose logs backend`.
+  The first start needs internet access to huggingface.co.
+- **`password authentication failed`**: the database volume was created with an
+  older `POSTGRES_PASSWORD`; PostgreSQL only reads it on first initialisation.
+  Restore the old password in `.env`, or delete the data with `docker compose down -v`.
+- **Port already in use**: stop whatever uses 3000/8000, or change
+  `POSTGRES_HOST_PORT` in `.env` for the database. The API and UI ports are fixed
+  in `compose.yaml` because the UI's API URL is built into the frontend image.
+- **UI shows "Cannot reach the TruthLayer server"**: check that the backend is healthy.
+  If you serve the UI from a different origin, add it to `TRUTHLAYER_CORS_ORIGINS`.
+- **UI shows 401**: the key pasted in the UI doesn't match any configured hash.
+- **The UI still uses old settings**: `NEXT_PUBLIC_*` values are built into the
+  frontend image; rebuild with `docker compose build frontend`.
+
+
 ## Running the tests
 
 ```powershell
