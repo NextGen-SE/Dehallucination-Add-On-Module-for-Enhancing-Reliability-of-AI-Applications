@@ -41,6 +41,24 @@ class Citation(BaseModel):
     relevance_score: float
 
 
+class NLIScores(BaseModel):
+    entailment: float
+    contradiction: float
+    neutral: float
+
+
+class EvidenceAssessment(BaseModel):
+    """A passage the NLI model assessed for this claim (REQ-1.2: up to 3)."""
+
+    source_id: str
+    text: str
+    relevance_score: float
+    nli_label: Literal["entailment", "contradiction", "neutral"]
+    nli_confidence: float = Field(ge=0.0, le=1.0, description="Probability of nli_label.")
+    nli_scores: NLIScores
+    supports_verdict: bool = Field(description="True if this passage is one of the claim's citations.")
+
+
 class ClaimResult(BaseModel):
     claim_id: int
     text: str
@@ -49,7 +67,12 @@ class ClaimResult(BaseModel):
     source_sentence_span: Span
     verdict: Verdict
     confidence: float = Field(ge=0.0, le=1.0)
+    # Passages that justify the verdict (empty for Unverifiable), strongest first.
     citations: list[Citation]
+    # Every passage the NLI model assessed, most relevant first; may be fewer
+    # than 3 (only passages above the relevance threshold are assessed) and is
+    # empty when none qualifies.
+    evidence_passages: list[EvidenceAssessment] = Field(default_factory=list)
 
 
 class VerifyResponse(BaseModel):

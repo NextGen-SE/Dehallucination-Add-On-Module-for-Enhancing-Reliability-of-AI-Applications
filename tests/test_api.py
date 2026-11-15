@@ -204,7 +204,24 @@ class TestVerifySuccess(ApiTestCase):
                 "verdict",
                 "confidence",
                 "citations",
+                # Task 1.1 (REQ-1.2): additive; every NLI-assessed passage.
+                "evidence_passages",
             },
+        )
+
+        self.assertEqual(
+            first["evidence_passages"],
+            [
+                {
+                    "source_id": "KB-001",
+                    "text": KB[0]["text"],
+                    "relevance_score": 1.0,
+                    "nli_label": "entailment",
+                    "nli_confidence": 0.95,
+                    "nli_scores": {"entailment": 0.95, "contradiction": 0.03, "neutral": 0.02},
+                    "supports_verdict": True,
+                }
+            ],
         )
 
         self.assertEqual(first["confidence"], 0.95)

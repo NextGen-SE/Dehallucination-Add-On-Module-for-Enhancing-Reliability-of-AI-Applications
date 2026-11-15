@@ -96,6 +96,11 @@ class SqlRequestLogger:
     def create_schema(self) -> None:
         metadata.create_all(self._engine)
 
+    def ping(self) -> None:
+        """Raise if the database is unreachable (used by GET /health)."""
+        with self._engine.connect() as conn:
+            conn.execute(select(1))
+
     def record(self, entry: RequestLogEntry) -> None:
         with self._engine.begin() as conn:
             conn.execute(insert(request_logs).values(**asdict(entry)))

@@ -41,8 +41,9 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      # Startup finishes (and the port opens) only after the models load and the DB is reachable.
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/openapi.json', timeout=5)"]
+      # /health answers 200 only once the models are loaded and the DB responds
+      # (503 otherwise, which makes urlopen raise and the check fail).
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
       interval: 10s
       timeout: 10s
       retries: 5

@@ -168,11 +168,28 @@ its API key field.
     "source_sentence_span": {"start_char": 0, "end_char": 25},
     "verdict": "Supported",
     "confidence": 0.97,
-    "citations": [{"source_id": "KB-001", "text": "The Earth orbits the Sun once approximately every 365.25 days.", "relevance_score": 0.81}]
+    "citations": [{"source_id": "KB-001", "text": "The Earth orbits the Sun once approximately every 365.25 days.", "relevance_score": 0.81}],
+    "evidence_passages": [{
+      "source_id": "KB-001", "text": "The Earth orbits the Sun once approximately every 365.25 days.",
+      "relevance_score": 0.81, "nli_label": "entailment", "nli_confidence": 0.97,
+      "nli_scores": {"entailment": 0.97, "contradiction": 0.01, "neutral": 0.02},
+      "supports_verdict": true
+    }]
   }],
   "processing_time_ms": 812
 }
 ```
+How the verdict is reached: the 5 most similar passages are retrieved; the
+most relevant 3 of them that clear the relevance threshold (0.35) are each
+checked by the NLI model and listed in `evidence_passages` (fewer than 3, or
+none, when fewer qualify; with none, the claim is Unverifiable as before).
+Passages judged neutral decide nothing. If the decisive passages agree, that
+is the verdict. If some entail and some contradict, the side with the higher
+relevance x NLI probability wins by a margin of at least 0.1, otherwise the
+claim is Unverifiable. `citations` keeps its meaning: the passages backing the
+verdict, strongest first (empty for Unverifiable). `confidence` is the NLI
+probability of the strongest backing passage.
+
 Spans are half-open character offsets into the request `text`. When no
 claims are found: `status: "no_verifiable_claims"`, `message: "No
 verifiable claims found"`, `claims: []` (still 200, REQ-4).
@@ -262,6 +279,7 @@ while it downloads the models (`docker compose logs -f backend` shows progress).
 | Frontend | http://localhost:3000 (paste your API key into the API key field) |
 | Backend API | http://localhost:8000/verify |
 | API docs | http://localhost:8000/docs |
+| Health (no key) | http://localhost:8000/health (200 when models are loaded and the DB answers, else 503) |
 | PostgreSQL | `localhost:5433` (user/db `truthlayer`, password from `.env`) |
 
 All ports are bound to `127.0.0.1`, so they're reachable only from your machine.
@@ -295,10 +313,26 @@ docker compose exec db psql -U truthlayer -d truthlayer -c "SELECT created_at, s
 - **Backend restarts with `ConfigError`**: the hash is not a 64-character hex
   SHA-256. Paste the hash printed by `python -m api.auth`, not the key.
 - **Backend stuck at `health: starting`**: check `docker compose logs backend`.
-  The first start needs internet access to huggingface.co.
-- **`password authentication failed`**: the database volume was created with an
-  older `POSTGRES_PASSWORD`; PostgreSQL only reads it on first initialisation.
-  Restore the old password in `.env`, or delete the data with `docker compose down -v`.
+  The first start needs internet access to huggingface.co. The backend connects
+  to the database before loading the models, so a database problem shows up
+  within seconds of startup.
+- **`password authentication failed for user "truthlayer"`** (backend keeps
+  restarting, UI says "Cannot reach the TruthLayer server"): the `pgdata` volume
+  was created with an older `POSTGRES_PASSWORD`. PostgreSQL reads that variable
+  only when the volume is first initialised, so editing `.env` later does not
+  change the stored password. To make the database accept the password now in
+  `.env`, **keeping all data** (connections inside the `db` container need no
+  password, so the old one isn't required):
+  ```powershell
+  $pw = (Select-String -Path .env -Pattern '^POSTGRES_PASSWORD=(.*)$').Matches[0].Groups[1].Value.Trim()
+  "ALTER ROLE truthlayer WITH PASSWORD '$pw';" | docker compose exec -T db psql -q -U truthlayer -d truthlayer -v ON_ERROR_STOP=1
+  Remove-Variable pw
+  docker compose restart backend
+  ```
+  (Replace `truthlayer` with your `POSTGRES_USER` if you changed it.) Only use
+  `docker compose down -v` if you want to delete the request logs and models.
+  Changing `POSTGRES_USER` or `POSTGRES_DB` after the first start has the same
+  cause: that role or database was never created in the existing volume.
 - **Port already in use**: stop whatever uses 3000/8000, or change
   `POSTGRES_HOST_PORT` in `.env` for the database. The API and UI ports are fixed
   in `compose.yaml` because the UI's API URL is built into the frontend image.

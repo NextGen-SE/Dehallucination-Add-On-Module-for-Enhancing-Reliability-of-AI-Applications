@@ -13,7 +13,7 @@ from collections import Counter
 from claim_extraction import extract_claims
 from evidence_verification import EvidenceVerifier
 
-from api.schemas import Citation, ClaimResult, Span
+from api.schemas import Citation, ClaimResult, EvidenceAssessment, NLIScores, Span
 
 
 class VerificationPipeline:
@@ -58,6 +58,18 @@ class VerificationPipeline:
                             relevance_score=e.relevance_score,
                         )
                         for e in v.evidence
+                    ],
+                    evidence_passages=[
+                        EvidenceAssessment(
+                            source_id=a.source_id,
+                            text=a.text,
+                            relevance_score=a.relevance_score,
+                            nli_label=a.nli_label,
+                            nli_confidence=a.nli_confidence,
+                            nli_scores=NLIScores(**a.nli_scores),
+                            supports_verdict=a.supports_verdict,
+                        )
+                        for a in v.assessed_passages
                     ],
                 )
             )

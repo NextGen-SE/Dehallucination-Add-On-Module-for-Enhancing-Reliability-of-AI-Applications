@@ -34,6 +34,13 @@ logger = logging.getLogger("truthlayer.api")
 
 LOGGED_PATHS = frozenset({"/verify"})
 
+DB_STARTUP_HINT = (
+    "Cannot initialise the request-log database (%s). Check TRUTHLAYER_DATABASE_URL. "
+    "With Docker Compose: PostgreSQL applies POSTGRES_PASSWORD only when its data volume "
+    "is first created, so changing it in .env later causes 'password authentication "
+    "failed'. See README > Troubleshooting to resync the password without data loss."
+)
+
 _api_key_header = APIKeyHeader(name=API_KEY_HEADER, auto_error=False)
 
 _ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
@@ -76,14 +83,22 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        # Database first: it is fast to check, so a misconfigured database
+        # fails startup in seconds instead of after loading the models.
+        if app.state.request_logger is None:
+            sql_logger = SqlRequestLogger.from_url(settings.database_url)
+            try:
+                sql_logger.create_schema()
+            except Exception as exc:
+                sql_logger.dispose()
+                # Exception type only: driver messages can echo connection details.
+                logger.error(DB_STARTUP_HINT, type(exc).__name__)
+                raise
+            app.state.request_logger = sql_logger
         if app.state.pipeline is None:
             kb = load_knowledge_base(settings.knowledge_base_path)
             # Loads (and on first run downloads) the embedding and NLI models.
             app.state.pipeline = VerificationPipeline(EvidenceVerifier(kb))
-        if app.state.request_logger is None:
-            sql_logger = SqlRequestLogger.from_url(settings.database_url)
-            sql_logger.create_schema()
-            app.state.request_logger = sql_logger
         purged = app.state.request_logger.purge_older_than(settings.log_retention_days)
         if purged:
             logger.info("Purged %d request log rows older than %d days", purged, settings.log_retention_days)
@@ -119,6 +134,25 @@ def create_app(
         return schema
 
     app.openapi = openapi
+
+    @app.get("/health", responses={503: {"description": "Models not loaded or database unreachable."}})
+    def health(request: Request) -> JSONResponse:
+        """Readiness probe (no API key): 200 only when models are loaded and the DB answers."""
+        checks = {"pipeline": request.app.state.pipeline is not None, "database": False}
+        request_logger = request.app.state.request_logger
+        if request_logger is not None:
+            ping = getattr(request_logger, "ping", None)
+            try:
+                if ping:
+                    ping()
+                checks["database"] = True
+            except Exception as exc:
+                logger.warning("Health check: database unreachable (%s)", type(exc).__name__)
+        ok = all(checks.values())
+        return JSONResponse(
+            status_code=200 if ok else 503,
+            content={"status": "ok" if ok else "unavailable", "checks": checks},
+        )
 
     @app.post(
         "/verify",
